@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=io.github.jayelg.BootcUpdates1
+Exec=@KDE_INSTALL_FULL_LIBEXECDIR@/bootcupdatesd
+User=root
+SystemdService=bootcupdatesd.service

@@ -1,0 +1,15 @@
+[Global]
+IconName=system-software-update
+Comment=System Updates
+Name=System Updates
+DesktopEntry=bootcupdates
+
+[Event/updateStaged]
+Name=Update staged
+Comment=A system update is ready to apply on restart
+Action=Popup
+
+[Event/restartScheduled]
+Name=Restart scheduled
+Comment=A restart has been scheduled to apply an update
+Action=Popup

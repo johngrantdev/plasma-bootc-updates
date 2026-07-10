@@ -1,0 +1,12 @@
+[Unit]
+Description=bootc update notifier
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=@KDE_INSTALL_FULL_LIBEXECDIR@/bootcupdates-notifier
+Restart=on-failure
+Slice=background.slice
+
+[Install]
+WantedBy=graphical-session.target

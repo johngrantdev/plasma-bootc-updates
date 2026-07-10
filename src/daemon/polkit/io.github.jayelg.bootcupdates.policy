@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
+<policyconfig>
+  <vendor>falcos</vendor>
+  <vendor_url>https://github.com/jayelg/falcos-bootc-updates</vendor_url>
+
+  <action id="io.github.jayelg.bootcupdates.status">
+    <description>Read bootc deployment status</description>
+    <message>Authentication is required to read the system image status</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+
+  <action id="io.github.jayelg.bootcupdates.check">
+    <description>Check for system image updates</description>
+    <message>Authentication is required to check for system updates</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+
+  <!-- No prompt: the system already stages updates unattended via its timer. -->
+  <action id="io.github.jayelg.bootcupdates.stage">
+    <description>Download and stage a system image update</description>
+    <message>Authentication is required to stage a system update</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+</policyconfig>

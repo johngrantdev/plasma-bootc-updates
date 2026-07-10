@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rpm:
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:44
+    steps:
+      - name: Install tooling
+        run: dnf install -y git rpm-build 'dnf-command(builddep)'
+
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: dnf builddep -y packaging/falcos-bootc-updates.spec
+
+      - name: Build RPM
+        run: |
+          git config --global --add safe.directory "$PWD"
+          VERSION=$(awk '/^Version:/ {print $2}' packaging/falcos-bootc-updates.spec)
+          mkdir -p ~/rpmbuild/SOURCES
+          git archive --format=tar.gz --prefix="falcos-bootc-updates-$VERSION/" \
+            -o ~/rpmbuild/SOURCES/falcos-bootc-updates-$VERSION.tar.gz HEAD
+          rpmbuild -ba packaging/falcos-bootc-updates.spec
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpms
+          path: ~/rpmbuild/RPMS/x86_64/*.rpm

@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:44
+    permissions:
+      contents: write
+    steps:
+      - name: Install tooling
+        run: dnf install -y git rpm-build 'dnf-command(builddep)' gh
+
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: dnf builddep -y packaging/falcos-bootc-updates.spec
+
+      - name: Build versioned RPM
+        run: |
+          git config --global --add safe.directory "$PWD"
+          # The tag is the source of truth for the version.
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/^Version:.*/Version:        $VERSION/" packaging/falcos-bootc-updates.spec
+          mkdir -p ~/rpmbuild/SOURCES
+          git archive --format=tar.gz --prefix="falcos-bootc-updates-$VERSION/" \
+            -o ~/rpmbuild/SOURCES/falcos-bootc-updates-$VERSION.tar.gz HEAD
+          rpmbuild -ba packaging/falcos-bootc-updates.spec
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --generate-notes ~/rpmbuild/RPMS/x86_64/*.rpm

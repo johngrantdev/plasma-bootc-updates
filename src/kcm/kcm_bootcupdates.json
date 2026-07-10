@@ -1,0 +1,9 @@
+{
+    "KPlugin": {
+        "Description": "Manage bootc system image updates",
+        "Icon": "system-software-update",
+        "Name": "System Updates"
+    },
+    "X-KDE-Keywords": "update,upgrade,bootc,image,restart,reboot",
+    "X-KDE-System-Settings-Parent-Category": "system-administration"
+}

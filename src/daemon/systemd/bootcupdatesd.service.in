@@ -1,0 +1,9 @@
+[Unit]
+Description=bootc updates D-Bus service
+
+[Service]
+Type=dbus
+BusName=io.github.jayelg.BootcUpdates1
+ExecStart=@KDE_INSTALL_FULL_LIBEXECDIR@/bootcupdatesd
+ProtectHome=yes
+PrivateTmp=yes
