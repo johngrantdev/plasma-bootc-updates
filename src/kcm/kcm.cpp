@@ -12,6 +12,8 @@
 #include <KLocalizedString>
 #include <KPluginFactory>
 
+#include "packagediff.h"
+
 using namespace Qt::StringLiterals;
 
 namespace
@@ -48,6 +50,15 @@ void KCMBootcUpdates::refresh()
     // This file exists exactly when a deployment is staged (no root needed).
     m_updateStaged = QFile::exists(u"/run/ostree/staged-deployment"_s);
     Q_EMIT statusChanged();
+
+    if (m_updateStaged) {
+        loadChangelog();
+    } else {
+        m_changelog.clear();
+        m_changelogTotal = 0;
+        m_changelogError.clear();
+        Q_EMIT changelogChanged();
+    }
 
     auto watcher = new QDBusPendingCallWatcher(
         QDBusConnection::systemBus().asyncCall(daemonCall(u"Status"_s), 30000), this);
@@ -140,6 +151,65 @@ void KCMBootcUpdates::cancelScheduledRestart()
     QDBusConnection::systemBus().asyncCall(
         QDBusMessage::createMethodCall(LOGIN1_SERVICE, LOGIN1_PATH, LOGIN1_IFACE, u"CancelScheduledShutdown"_s));
     setMessage(i18n("Scheduled restart cancelled"));
+}
+
+void KCMBootcUpdates::loadChangelog()
+{
+    if (m_changelogLoading) {
+        return;
+    }
+    m_changelogLoading = true;
+    m_changelogError.clear();
+    Q_EMIT changelogChanged();
+
+    auto diff = new PackageDiff(this);
+    connect(diff, &PackageDiff::finished, this, [this, diff](const QList<PackageChange> &changes) {
+        diff->deleteLater();
+        m_changelog.clear();
+        m_changelogTotal = changes.size();
+
+        // changes arrive sorted by group, so fold consecutive runs into one
+        // section each. QML renders each section as a collapsible header.
+        QVariantList packages;
+        QString group;
+        auto flush = [&] {
+            if (packages.isEmpty()) {
+                return;
+            }
+            m_changelog.append(QVariantMap{
+                {u"group"_s, group},
+                {u"count"_s, packages.size()},
+                {u"packages"_s, packages},
+            });
+            packages.clear();
+        };
+        for (const PackageChange &change : changes) {
+            if (change.group != group) {
+                flush();
+                group = change.group;
+            }
+            packages.append(QVariantMap{
+                {u"name"_s, change.name},
+                {u"from"_s, change.from},
+                {u"to"_s, change.to},
+                {u"kind"_s, change.kind},
+                {u"source"_s, change.source},
+            });
+        }
+        flush();
+
+        m_changelogLoading = false;
+        Q_EMIT changelogChanged();
+    });
+    connect(diff, &PackageDiff::failed, this, [this, diff](const QString &error) {
+        diff->deleteLater();
+        m_changelog.clear();
+        m_changelogTotal = 0;
+        m_changelogError = error;
+        m_changelogLoading = false;
+        Q_EMIT changelogChanged();
+    });
+    diff->start();
 }
 
 void KCMBootcUpdates::setBusy(bool busy)

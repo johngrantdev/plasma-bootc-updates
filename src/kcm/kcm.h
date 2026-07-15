@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QVariantList>
+
 #include <KQuickConfigModule>
 
 class KCMBootcUpdates : public KQuickConfigModule
@@ -11,6 +13,10 @@ class KCMBootcUpdates : public KQuickConfigModule
     Q_PROPERTY(bool updateStaged READ updateStaged NOTIFY statusChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString lastMessage READ lastMessage NOTIFY lastMessageChanged)
+    Q_PROPERTY(QVariantList changelog READ changelog NOTIFY changelogChanged)
+    Q_PROPERTY(int changelogTotal READ changelogTotal NOTIFY changelogChanged)
+    Q_PROPERTY(bool changelogLoading READ changelogLoading NOTIFY changelogChanged)
+    Q_PROPERTY(QString changelogError READ changelogError NOTIFY changelogChanged)
 
 public:
     explicit KCMBootcUpdates(QObject *parent, const KPluginMetaData &metaData);
@@ -21,6 +27,10 @@ public:
     bool updateStaged() const { return m_updateStaged; }
     bool busy() const { return m_busy; }
     QString lastMessage() const { return m_lastMessage; }
+    QVariantList changelog() const { return m_changelog; }
+    int changelogTotal() const { return m_changelogTotal; }
+    bool changelogLoading() const { return m_changelogLoading; }
+    QString changelogError() const { return m_changelogError; }
 
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void checkNow();
@@ -34,6 +44,7 @@ Q_SIGNALS:
     void statusChanged();
     void busyChanged();
     void lastMessageChanged();
+    void changelogChanged();
 
 private Q_SLOTS:
     // handles the daemon's CheckCompleted/StageCompleted signals
@@ -44,6 +55,7 @@ private:
     void setBusy(bool busy);
     void setMessage(const QString &message);
     void handleStatusJson(const QString &json);
+    void loadChangelog();
 
     QString m_bootedVersion;
     QString m_bootedImage;
@@ -51,4 +63,8 @@ private:
     bool m_updateStaged = false;
     bool m_busy = false;
     QString m_lastMessage;
+    QVariantList m_changelog;
+    int m_changelogTotal = 0;
+    bool m_changelogLoading = false;
+    QString m_changelogError;
 };

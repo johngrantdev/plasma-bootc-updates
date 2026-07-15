@@ -86,13 +86,114 @@ KCM.SimpleKCM {
 
         Kirigami.Separator {
             Kirigami.FormData.isSection: true
+            visible: kcm.updateStaged
         }
 
-        // TODO: changelog between booted and staged revisions
         QQC2.Label {
-            Kirigami.FormData.label: i18n("Changelog:")
-            text: i18n("Not implemented yet")
-            opacity: 0.6
+            Kirigami.FormData.label: i18n("Changes:")
+            visible: kcm.updateStaged
+            text: {
+                if (kcm.changelogLoading) {
+                    return i18n("Reading package lists…")
+                }
+                if (kcm.changelogError.length > 0) {
+                    return kcm.changelogError
+                }
+                if (kcm.changelog.length === 0) {
+                    return i18n("No package changes")
+                }
+                return i18np("%1 package changed", "%1 packages changed", kcm.changelogTotal)
+            }
+            opacity: kcm.changelog.length > 0 ? 1.0 : 0.6
+        }
+
+        QQC2.ScrollView {
+            visible: kcm.updateStaged && kcm.changelog.length > 0
+            implicitWidth: Kirigami.Units.gridUnit * 26
+            implicitHeight: Kirigami.Units.gridUnit * 14
+            Component.onCompleted: background.visible = true
+
+            ListView {
+                clip: true
+                model: kcm.changelog // one entry per group
+                spacing: 0
+
+                delegate: Column {
+                    id: groupDelegate
+                    required property var modelData
+                    property bool expanded: false
+                    width: ListView.view.width
+
+                    QQC2.ItemDelegate {
+                        width: parent.width
+                        onClicked: groupDelegate.expanded = !groupDelegate.expanded
+
+                        contentItem: RowLayout {
+                            spacing: Kirigami.Units.smallSpacing
+                            Kirigami.Icon {
+                                source: groupDelegate.expanded ? "go-down-symbolic" : "go-next-symbolic"
+                                implicitWidth: Kirigami.Units.iconSizes.small
+                                implicitHeight: Kirigami.Units.iconSizes.small
+                            }
+                            QQC2.Label {
+                                text: groupDelegate.modelData.group
+                                font.bold: true
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                            QQC2.Label {
+                                text: groupDelegate.modelData.count
+                                opacity: 0.6
+                            }
+                        }
+                    }
+
+                    // Rows exist only while expanded, so collapsed groups cost
+                    // nothing.
+                    Repeater {
+                        model: groupDelegate.expanded ? groupDelegate.modelData.packages : []
+
+                        delegate: RowLayout {
+                            required property var modelData
+                            width: groupDelegate.width
+                            spacing: Kirigami.Units.largeSpacing
+
+                            Item { implicitWidth: Kirigami.Units.gridUnit }
+
+                            QQC2.Label {
+                                text: modelData.name
+                                elide: Text.ElideRight
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+                            }
+
+                            QQC2.Label {
+                                // kind: 0 changed, 1 added, 2 removed
+                                text: {
+                                    if (modelData.kind === 1) {
+                                        return i18n("new, %1", modelData.to)
+                                    }
+                                    if (modelData.kind === 2) {
+                                        return i18n("removed, was %1", modelData.from)
+                                    }
+                                    return i18n("%1 to %2", modelData.from, modelData.to)
+                                }
+                                elide: Text.ElideRight
+                                opacity: 0.8
+                                Layout.fillWidth: true
+                            }
+
+                            // Shown when a group mixes sources (manifest mode);
+                            // redundant in the vendor fallback.
+                            QQC2.Label {
+                                visible: modelData.source !== groupDelegate.modelData.group
+                                text: modelData.source
+                                opacity: 0.6
+                                font: Kirigami.Theme.smallFont
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

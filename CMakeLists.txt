@@ -12,7 +12,7 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(FeatureSummary)
 
-find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core DBus Gui Qml Quick)
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Concurrent Core DBus Gui Qml Quick)
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS Config CoreAddons KCMUtils I18n Notifications)
 
 add_subdirectory(src/daemon)

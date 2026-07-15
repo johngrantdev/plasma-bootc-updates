@@ -49,7 +49,15 @@ sudo rpm -Uvh --force dist/falcos-bootc-updates-*.x86_64.rpm
 sudo systemctl daemon-reload && sudo systemctl reload dbus-broker
 sudo systemctl restart polkit   # overlay writes do not trigger polkitd's reload
 sudo systemctl try-restart bootcupdatesd   # replace a running daemon
+```
 
+System Settings compiles the KCM's QML into a per-app cache and does not
+notice when a reinstalled plugin ships new QML, so after reinstalling:
+
+```sh
+rm -rf ~/.cache/systemsettings/qmlcache
+kquitapp6 systemsettings 2>/dev/null || pkill -x systemsettings
+systemsettings kcm_bootcupdates
 ```
 
 ## Releasing
@@ -65,9 +73,6 @@ in the spec is only a default for local and CI builds.
 
 ## Roadmap
 
-- Collated changelog: resolve booted and staged
-  `org.opencontainers.image.revision` labels, list Renovate commits
-  between them via the GitHub API, link upstream release notes.
 - Persist the preferred restart time (KConfig).
 - Show and cancel an existing scheduled restart from logind state.
 - Stretch: per package update management as a GitHub front end (open
