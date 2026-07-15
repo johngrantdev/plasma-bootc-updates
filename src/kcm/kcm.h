@@ -15,6 +15,7 @@ class KCMBootcUpdates : public KQuickConfigModule
     Q_PROPERTY(QString lastMessage READ lastMessage NOTIFY lastMessageChanged)
     Q_PROPERTY(QVariantList changelog READ changelog NOTIFY changelogChanged)
     Q_PROPERTY(int changelogTotal READ changelogTotal NOTIFY changelogChanged)
+    Q_PROPERTY(int securityCount READ securityCount NOTIFY changelogChanged)
     Q_PROPERTY(bool changelogLoading READ changelogLoading NOTIFY changelogChanged)
     Q_PROPERTY(QString changelogError READ changelogError NOTIFY changelogChanged)
 
@@ -29,6 +30,7 @@ public:
     QString lastMessage() const { return m_lastMessage; }
     QVariantList changelog() const { return m_changelog; }
     int changelogTotal() const { return m_changelogTotal; }
+    int securityCount() const { return m_securityCount; }
     bool changelogLoading() const { return m_changelogLoading; }
     QString changelogError() const { return m_changelogError; }
 
@@ -65,6 +67,7 @@ private:
     QString m_lastMessage;
     QVariantList m_changelog;
     int m_changelogTotal = 0;
+    int m_securityCount = 0;
     bool m_changelogLoading = false;
     QString m_changelogError;
 };

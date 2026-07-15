@@ -102,9 +102,27 @@ KCM.SimpleKCM {
                 if (kcm.changelog.length === 0) {
                     return i18n("No package changes")
                 }
-                return i18np("%1 package changed", "%1 packages changed", kcm.changelogTotal)
+                return i18np("%1 package updated", "%1 packages updated", kcm.changelogTotal)
             }
             opacity: kcm.changelog.length > 0 ? 1.0 : 0.6
+        }
+
+        RowLayout {
+            Kirigami.FormData.label: i18n("Security:")
+            visible: kcm.updateStaged && !kcm.changelogLoading && kcm.changelog.length > 0
+            spacing: Kirigami.Units.smallSpacing
+
+            Kirigami.Icon {
+                source: "security-high-symbolic"
+                visible: kcm.securityCount > 0
+                implicitWidth: Kirigami.Units.iconSizes.small
+                implicitHeight: Kirigami.Units.iconSizes.small
+            }
+            QQC2.Label {
+                text: i18np("%1 vulnerability fixed", "%1 vulnerabilities fixed", kcm.securityCount)
+                color: kcm.securityCount > 0 ? Kirigami.Theme.neutralTextColor : Kirigami.Theme.textColor
+                opacity: kcm.securityCount > 0 ? 1.0 : 0.6
+            }
         }
 
         QQC2.ScrollView {

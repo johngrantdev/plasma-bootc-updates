@@ -6,11 +6,15 @@
 #include <QDateTime>
 #include <QFile>
 #include <QProcess>
+#include <QSet>
+#include <QStringList>
 
 #include <KConfigGroup>
 #include <KLocalizedString>
 #include <KNotification>
 #include <KSharedConfig>
+
+#include "packagediff.h"
 
 using namespace Qt::StringLiterals;
 
@@ -42,18 +46,44 @@ void Notifier::evaluate()
     const bool staged = QFile::exists(STAGED);
     if (staged && !m_notified) {
         m_notified = true;
-        notifyStaged();
+        startStagedNotification();
     } else if (!staged) {
         m_notified = false;
     }
 }
 
-void Notifier::notifyStaged()
+// Run the same diff the KCM shows, then summarise it in the notification.
+// Falls back to a plain message if the diff cannot be read.
+void Notifier::startStagedNotification()
+{
+    auto diff = new PackageDiff(this);
+    connect(diff, &PackageDiff::finished, this, [this, diff](const QList<PackageChange> &changes) {
+        diff->deleteLater();
+
+        QSet<QString> cves;
+        for (const PackageChange &change : changes) {
+            cves.unite(QSet<QString>(change.cves.begin(), change.cves.end()));
+        }
+
+        QString summary = i18np("%1 package updated", "%1 packages updated", changes.size());
+        if (!cves.isEmpty()) {
+            summary += u'\n' + i18np("%1 vulnerability fixed", "%1 vulnerabilities fixed", cves.size());
+        }
+        showStagedNotification(summary);
+    });
+    connect(diff, &PackageDiff::failed, this, [this, diff](const QString &) {
+        diff->deleteLater();
+        showStagedNotification(i18n("An update has been staged and will apply on the next restart."));
+    });
+    diff->start();
+}
+
+void Notifier::showStagedNotification(const QString &summary)
 {
     auto notification = new KNotification(u"updateStaged"_s);
     notification->setComponentName(u"bootcupdates"_s);
     notification->setTitle(i18n("System update ready"));
-    notification->setText(i18n("An update has been staged and will apply on the next restart."));
+    notification->setText(summary);
     notification->setIconName(u"system-software-update"_s);
     notification->setFlags(KNotification::Persistent);
 
@@ -64,10 +94,15 @@ void Notifier::notifyStaged()
     auto schedule = notification->addAction(i18n("Restart at %1", when.toString(u"HH:mm"_s)));
     connect(schedule, &KNotificationAction::activated, this, &Notifier::scheduleRestart);
 
-    auto open = notification->addDefaultAction(i18n("Open System Updates"));
-    connect(open, &KNotificationAction::activated, this, [] {
+    auto openSettings = [] {
         QProcess::startDetached(u"systemsettings"_s, {u"kcm_bootcupdates"_s});
-    });
+    };
+    // Explicit button plus body-click, since the default action alone is
+    // easy to miss.
+    auto review = notification->addAction(i18n("Review"));
+    connect(review, &KNotificationAction::activated, this, openSettings);
+    auto openDefault = notification->addDefaultAction(i18n("Review"));
+    connect(openDefault, &KNotificationAction::activated, this, openSettings);
 
     notification->sendEvent();
 }

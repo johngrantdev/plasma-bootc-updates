@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSet>
 
 #include <KLocalizedString>
 #include <KPluginFactory>
@@ -56,6 +57,7 @@ void KCMBootcUpdates::refresh()
     } else {
         m_changelog.clear();
         m_changelogTotal = 0;
+        m_securityCount = 0;
         m_changelogError.clear();
         Q_EMIT changelogChanged();
     }
@@ -168,6 +170,8 @@ void KCMBootcUpdates::loadChangelog()
         m_changelog.clear();
         m_changelogTotal = changes.size();
 
+        QSet<QString> allCves;
+
         // changes arrive sorted by group, so fold consecutive runs into one
         // section each. QML renders each section as a collapsible header.
         QVariantList packages;
@@ -188,6 +192,7 @@ void KCMBootcUpdates::loadChangelog()
                 flush();
                 group = change.group;
             }
+            allCves.unite(QSet<QString>(change.cves.begin(), change.cves.end()));
             packages.append(QVariantMap{
                 {u"name"_s, change.name},
                 {u"from"_s, change.from},
@@ -197,6 +202,7 @@ void KCMBootcUpdates::loadChangelog()
             });
         }
         flush();
+        m_securityCount = allCves.size();
 
         m_changelogLoading = false;
         Q_EMIT changelogChanged();
@@ -205,6 +211,7 @@ void KCMBootcUpdates::loadChangelog()
         diff->deleteLater();
         m_changelog.clear();
         m_changelogTotal = 0;
+        m_securityCount = 0;
         m_changelogError = error;
         m_changelogLoading = false;
         Q_EMIT changelogChanged();

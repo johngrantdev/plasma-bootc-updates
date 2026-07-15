@@ -4,6 +4,7 @@ add_executable(bootcupdates-notifier
 )
 
 target_link_libraries(bootcupdates-notifier PRIVATE
+    bootcupdatescommon
     Qt6::Gui
     Qt6::DBus
     KF6::ConfigCore

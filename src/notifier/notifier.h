@@ -14,7 +14,8 @@ public:
 
 private:
     void evaluate();
-    void notifyStaged();
+    void startStagedNotification();
+    void showStagedNotification(const QString &summary);
     void restartNow();
     void scheduleRestart();
 

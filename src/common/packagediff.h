@@ -11,8 +11,9 @@ struct PackageChange {
     QString from; // empty when Added
     QString to;   // empty when Removed
     Kind kind = Changed;
-    QString group;  // build-group from the falcos manifest, or the source
-    QString source; // friendly vendor, e.g. "Fedora", "Copr: secureblue"
+    QString group;      // build-group from the falcos manifest, or the source
+    QString source;     // friendly vendor, e.g. "Fedora", "Copr: secureblue"
+    QStringList cves;   // CVE ids newly cited in this bump's changelog
 };
 
 // Diffs the booted and staged deployments by reading each one's rpmdb.

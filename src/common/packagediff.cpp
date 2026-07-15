@@ -8,6 +8,7 @@
 #include <QMap>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QSet>
 #include <QtConcurrent>
 
 #include <KLocalizedString>
@@ -194,6 +195,43 @@ PackageSet readPackages(const QString &root, QString *error)
     return packages;
 }
 
+// Reads the CVE ids cited in the changelog of each named package in one
+// rpm call. Best-effort: not every fix cites a CVE, so this is a lower
+// bound, not an audit. The @@PKG marker trails each package's changelog.
+QHash<QString, QSet<QString>> readChangelogCves(const QString &root, const QStringList &names)
+{
+    QHash<QString, QSet<QString>> result;
+    if (names.isEmpty()) {
+        return result;
+    }
+    QProcess proc;
+    proc.start(u"rpm"_s,
+               QStringList{u"-q"_s, u"--root"_s, root, u"--changelog"_s, u"--qf"_s,
+                           u"\n@@PKG %{NAME}\n"_s}
+                   + names);
+    if (!proc.waitForFinished(60000)) {
+        return result;
+    }
+
+    static const QRegularExpression cveRe(u"CVE-[0-9]{4}-[0-9]+"_s);
+    static const QRegularExpression marker(u"^@@PKG (\\S+)$"_s);
+    QSet<QString> pending;
+    const auto lines = QString::fromUtf8(proc.readAllStandardOutput()).split(u'\n');
+    for (const QString &line : lines) {
+        const auto m = marker.match(line);
+        if (m.hasMatch()) {
+            result[m.captured(1)].unite(pending);
+            pending.clear();
+            continue;
+        }
+        auto it = cveRe.globalMatch(line);
+        while (it.hasNext()) {
+            pending.insert(it.next().captured(0));
+        }
+    }
+    return result;
+}
+
 // falcos bakes a { group: [package, ...] } map into the image. We read it
 // from the staged tree and invert it to package -> group. Absent is fine.
 GroupMap readGroupMap(const QString &root)
@@ -308,6 +346,25 @@ void PackageDiff::start()
                 change.group = change.source;
             }
             changes.append(change);
+        }
+
+        // Annotate version bumps with the CVEs newly cited between the two
+        // changelogs (staged minus booted). Two rpm calls for the whole set.
+        QStringList changedNames;
+        for (const PackageChange &c : changes) {
+            if (c.kind == PackageChange::Changed) {
+                changedNames.append(c.name);
+            }
+        }
+        const auto bootedCves = readChangelogCves(deployments.booted, changedNames);
+        const auto stagedCves = readChangelogCves(deployments.staged, changedNames);
+        for (PackageChange &c : changes) {
+            if (c.kind != PackageChange::Changed) {
+                continue;
+            }
+            auto fixed = stagedCves.value(c.name) - bootedCves.value(c.name);
+            c.cves = QStringList(fixed.begin(), fixed.end());
+            c.cves.sort();
         }
 
         const auto isBase = [&](const QString &g) {

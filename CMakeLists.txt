@@ -15,6 +15,7 @@ include(FeatureSummary)
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Concurrent Core DBus Gui Qml Quick)
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS Config CoreAddons KCMUtils I18n Notifications)
 
+add_subdirectory(src/common)
 add_subdirectory(src/daemon)
 add_subdirectory(src/kcm)
 add_subdirectory(src/notifier)
