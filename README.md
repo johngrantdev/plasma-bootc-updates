@@ -1,10 +1,8 @@
-# falcos-bootc-updates
+# plasma-bootc-updates
 
-KDE System Settings module for bootc based systems, built for
-[falcos](https://github.com/jayelg/falcos). Shows the booted image version,
-whether an update is staged, and offers check, stage, restart now, and
-scheduled restart. Updates are only ever staged; applying is always an
-explicit reboot.
+KDE System Settings module for bootc based systems.
+Shows the booted image version, whether an update is staged, and offers
+check, stage, restart now, andscheduled restart.
 
 ## Components
 
@@ -27,13 +25,11 @@ explicit reboot.
 bootc has no daemon or D-Bus API (bootc-dev/bootc#558 tracks an
 rpm-ostree compatible shim, unresolved). Plasma Discover's rpm-ostree
 backend drives rpm-ostreed, and mixing rpm-ostree mutations into a bootc
-managed host is discouraged upstream. Neither covers the falcos changelog
-flow (image label revisions resolved against GitHub history), so the
-privileged surface is kept to a ~200 line wrapper instead.
+managed host is discouraged upstream.
 
 ## Building
 
-The falcos host has no toolchain; builds run in a Fedora 44 container:
+A bootc host has no toolchain; builds run in a Fedora 44 container:
 
 ```sh
 scripts/build.sh        # compile into ./build
@@ -45,7 +41,7 @@ To test on the running system without a rebuild, use a transient overlay
 
 ```sh
 sudo bootc usroverlay
-sudo rpm -Uvh --force dist/falcos-bootc-updates-*.x86_64.rpm
+sudo rpm -Uvh --force dist/plasma-bootc-updates-*.x86_64.rpm
 sudo systemctl daemon-reload && sudo systemctl reload dbus-broker
 sudo systemctl restart polkit   # overlay writes do not trigger polkitd's reload
 sudo systemctl try-restart bootcupdatesd   # replace a running daemon
